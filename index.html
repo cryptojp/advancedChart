@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html ng-app="myApp">
+
+<head>
+    <!---Bootstrap and styling--->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- jQuery library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+    <!-- Latest compiled JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <!---Scripts--->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.6/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://www.amcharts.com/lib/3/amcharts.js"></script>
+    <script src="https://www.amcharts.com/lib/3/serial.js"></script>
+    <script src="https://www.amcharts.com/lib/3/amstock.js"></script>
+    <script src="app.js"></script>
+    <script src="chartUtil.js"></script>
+
+    <style>
+        body {
+            background-color: rbg(240, 240, 240);
+        }
+
+        #chartdiv {
+            width: 100%;
+            height: 750px;
+        }
+
+        .jumbotron {
+            color: black;
+            background-color: grey;
+            padding: 0 0 10% 0;
+        }
+    </style>
+
+</head>
+
+<body ng-controller="myController">
+    <div class="container">
+
+        <div class="row">
+            <div class="jumbotron text-left">
+                <div class="col-xs-6">
+                    <div class="row">
+                        <h5>Chart Indicators</h5>
+                        <div ng-repeat="(dropIndex, dropDown) in chartIndicatorSelection">
+                            <div class="col-xs-3">
+                                <div class="dropdown">
+                                    <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Indicator {{dropIndex + 1}}
+                                      <span class="caret"></span></button>
+                                    <ul class="dropdown-menu">
+                                        <li ng-repeat="(index, indicator) in chartIndicators"><a ng-click="handleNewIndicator(dropIndex,index)">{{indicator.name}}</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xs-3">
+                    <h5>Bottom Chart</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-danger dropdown-toggle" type="button" data-toggle="dropdown">Bottom Chart
+                                      <span class="caret"></span></button>
+                        <ul class="dropdown-menu">
+                            <li ng-repeat="(index, chart) in bottomChart"><a ng-click="handleBottomChart(index)">{{chart.name}}</a></li>
+                        </ul>
+                    </div>
+
+                </div>
+                <div class="col-xs-3">
+                    <h5>Social Indicators</h5>
+                </div>
+            </div>
+        </div>
+        <div id="chartdiv"></div>
+    </div>
+</body>
+
+
+</html>
