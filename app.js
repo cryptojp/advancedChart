@@ -1,5 +1,5 @@
 angular.module("myApp", [])
-  .controller("myController", ['$http', '$scope', 'chartUtil', function($http, $scope, chartUtil) {
+  .controller("myController", ['$http', '$scope', 'chartUtil', 'chartIndicators', function($http, $scope, chartUtil, chartIndicators) {
     $scope.currentDataSet = [];
     $scope.chartIndicators = [
       { key: 'NI', name: 'No Indicator', fullName: 'Remove the current indicator', type: 'Clear', period: 0, requiresLogin: false, selected: false, dropdownId: -1 },
@@ -40,6 +40,20 @@ angular.module("myApp", [])
     $scope.selectedIndicators = [0, 0, 0];
     $scope.currentBottomChart = [];
 
+    /*it is the max of the max values of all the peridos of the chartIndicators and bottomChart
+    var maxChartIndicatorPeriod = ($scope.chartIndicators.concat($scope.currentBottomChart)).reduce(function(a, b) {
+      return { period: Math.max(a.period, b.period) };
+    }).period;
+    var maxChartIndicatorSubPeriod = 0;
+    for (var i = 0; i < $scope.chartPeriod.length; ++i) {
+      var indicatorKeys = Object.keys($scope.chartPeriod[i].indicatorPeriods);
+      for (var j = 0; j < indicatorKeys.length; ++j) {
+        maxChartIndicatorSubPeriod = Math.max(maxChartIndicatorSubPeriod, $scope.chartPeriod[i].indicatorPeriods[indicatorKeys[j]]);
+      }
+    }
+    $scope.maxIndicatorPeriod = Math.max(maxChartIndicatorPeriod, maxChartIndicatorSubPeriod);
+    */
+
 
     $scope.handleNewIndicator = function(dropId, indicatorId) {
       if ($scope.selectedIndicators[dropId]['name'] == $scope.chartIndicators[indicatorId]['name']) {
@@ -47,8 +61,10 @@ angular.module("myApp", [])
       }
       else {
         $scope.selectedIndicators[dropId] = {
+          "key": $scope.chartIndicators[indicatorId]['key'],
           "name": $scope.chartIndicators[indicatorId]['name'],
-          "type": $scope.chartIndicators[indicatorId]['type']
+          "type": $scope.chartIndicators[indicatorId]['type'],
+          "period":$scope.chartIndicators[indicatorId]['period']
         };
         $scope.generateNewChart($scope.currentDataSet);
       }
@@ -60,10 +76,11 @@ angular.module("myApp", [])
       }
       else {
         $scope.currentBottomChart = {
-          "key":$scope.bottomChart[index]['key'],
-          "type":$scope.bottomChart[index]['type']
+          "key": $scope.bottomChart[index]['key'],
+          "name": $scope.bottomChart[index]['name'],
+          "type": $scope.bottomChart[index]['type'],
+          "period":$scope.bottomChart[index]['period']
         };
-        console.log($scope.currentBottomChart);
         $scope.generateNewChart($scope.currentDataSet);
       }
     };
@@ -78,14 +95,13 @@ angular.module("myApp", [])
 
 
     $scope.generateNewChart = function(data) {
-
-      var chart = AmCharts.makeChart("chartdiv", {
+      $scope.chartConfig = {
         type: "stock",
         theme: "none",
         color: "#fff",
         dataSets: [{
           dataProvider: data,
-          title: "Price",
+          title: "",
           fieldMappings: [{
             fromField: "open",
             toField: "open"
@@ -98,16 +114,13 @@ angular.module("myApp", [])
           }, {
             fromField: "close",
             toField: "close"
-          }, {
-            fromField: "volumefrom",
-            toField: "volumefrom"
           }],
           compared: false,
           categoryField: "time"
         }],
         dataDateFormat: "YYYY-MM-DD",
         panels: [{
-            title: "Value",
+            title: "CryptoCompare Index:BTC",
             percentHeight: 70,
             stockGraphs: [{
               type: "candlestick",
@@ -142,15 +155,12 @@ angular.module("myApp", [])
             columnWidth: 0.6,
             showCategoryAxis: false,
             stockGraphs: [{
-              valueField: "volumefrom",
-              openField: "open",
+              openField: "close",
               type: "column",
+              valueField: "volumeto",
               showBalloon: false,
               fillAlphas: 1,
-              lineColor: "#fff",
               fillColors: "#fff",
-              negativeLineColor: "#db4c3c",
-              negativeFillColors: "#db4c3c",
               useDataSetColors: false
             }],
 
@@ -248,53 +258,58 @@ angular.module("myApp", [])
             label: "MAX"
           }]
         }
-      });
-
+      };
+      console.log($scope.selectedIndicators);
+      
+      for (var index in $scope.selectedIndicators) {
+        switch($scope.selectedIndicators[index]['type']) {
+					case "SMA":
+						chartUtil.addSimpleMovingAverage($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[0],'close',$scope.selectedIndicators[index].period,data);
+						console.log('here');
+					break;
+					/*case "EMA":
+						chartIndicators.addExponentialMovingAverage($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[0],'close',$scope.chartIndicators[i].period,$scope.dataSetForIndicators);
+					break;
+				 	case "BBands":
+						chartIndicators.addBollingerBands($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[0],'close',$scope.chartIndicators[i].period,$scope.dataSetForIndicators);
+					break;*/
+				}
+      }
+      
 
       switch ($scope.currentBottomChart['type']) {
         case "Volume":
-						chartUtil.bottomVolume($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.fromsymbol);
-					break;
-					case "VolumeTo":
-						chartUtil.bottomVolumeTo($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.tosymbol);
-					break;
-					case "RSI":
-						console.log('RSI'); //chartIndicators.bottomRSI($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
-					break;
-					case "VOLATILITY":
-						console.log('volit'); //chartIndicators.bottomVolatility($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.currentPeriod,$scope.bottomChart[i]);
-						break;
-					case "ADL":
-						console.log('ADL');//chartIndicators.bottomADL($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
-					break;
-					case "MACD":
-						console.log('ADL');//chartIndicators.bottomMACD($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
-					break;
-					case "StochasticO":
-						console.log('ADL');//chartIndicators.bottomStochasticO($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
-					break;
-					case "Aroon":
-						console.log('ADL');//chartIndicators.bottomAroon($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
-					break;
-					case "OBV":
-						console.log('ADL');//chartIndicators.bottomOBV($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
-					break;
-      } 
-      
-      /*for (var index in $scope.selectedIndicators) {
-        
-        switch($scope.chartIndicators[i].type){
-					case "SMA":
-						//chartIndicators.addSimpleMovingAverage($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[0],'close',$scope.chartIndicators[i].period,$scope.dataSetForIndicators);
-					break;
-					case "EMA":
-						//chartIndicators.addExponentialMovingAverage($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[0],'close',$scope.chartIndicators[i].period,$scope.dataSetForIndicators);
-					break;
-				 	case "BBands":
-						//chartIndicators.addBollingerBands($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[0],'close',$scope.chartIndicators[i].period,$scope.dataSetForIndicators);
-					break;
-				}
-      }*/
+          chartUtil.bottomVolume($scope.chartConfig.dataSets[0], $scope.chartConfig.panels[1], "BTC");
+          break;
+        case "VolumeTo":
+          chartUtil.bottomVolumeTo($scope.chartConfig.dataSets[0], $scope.chartConfig.panels[1], "USD");
+          break;
+        case "RSI":
+          console.log('RSI'); //chartIndicators.bottomRSI($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
+          break;
+        case "VOLATILITY":
+          //chartIndicators.bottomVolatility($scope.chartConfig.dataSets[0], $scope.chartConfig.panels[1], $scope.dataSetForIndicators, $scope.currentPeriod, $scope.bottomChart[i]);
+          break;
+        case "ADL":
+          console.log('ADL'); //chartIndicators.bottomADL($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
+          break;
+        case "MACD":
+          console.log('ADL'); //chartIndicators.bottomMACD($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
+          break;
+        case "StochasticO":
+          console.log('ADL'); //chartIndicators.bottomStochasticO($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
+          break;
+        case "Aroon":
+          chartIndicators.bottomAroon($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.currentBottomChart);
+          break;
+        case "OBV":
+          console.log('ADL'); //chartIndicators.bottomOBV($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
+          break;
+      }
+
+      var chart = AmCharts.makeChart("chartdiv", $scope.chartConfig);
+      console.log(chart);
+
     };
 
 

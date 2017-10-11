@@ -5,11 +5,17 @@ angular.module('myApp')
             var url = "https://min-api.cryptocompare.com/data/histoday?fsym=BTC&tsym=USD&limit=365";
             return $http.get(url);
         },
-        
-        bottomVolume: function(){
-            
-        },
-        addSimpleMovingAverage: function(dataSet,panel,field,period,dataSetForIndicators,text){
+        bottomVolume : function(dataSet,panel,from){
+			dataSet.fieldMappings.push({fromField: "volumefrom",toField: "volumefrom"});
+			panel.title = "Volume "+from;
+			panel.stockGraphs[0].valueField = "volumefrom";
+		},
+		bottomVolumeTo : function(dataSet,panel,to){
+			dataSet.fieldMappings.push({fromField: "volumeto",toField: "volumeto"});
+			panel.title = "Volume "+to;
+			panel.stockGraphs[0].valueField = "volumeto";
+		},
+        addSimpleMovingAverage: function(dataSet,panel,field,period,dataSetForIndicators){
             var avgField = "SMA"+period;
 			var graph={};
 			graph.valueField = avgField;
@@ -27,14 +33,25 @@ angular.module('myApp')
 				case 20:
 					graph.lineColor= "blue";
 				break;
-			};
+			}
 			dataSet.fieldMappings.push({fromField: avgField,toField: avgField});
 			
 			var dataSetProvider = dataSet.dataProvider;
 			
 			dataSetProvider=dataSetForIndicators.concat(dataSetProvider);
 			
-			this.addSimpleMovingAverageDataPoints(dataSetProvider,period,field,avgField);
+			//addSimpleMovingAverageDataPoints(dataSetProvider,period,field,avgField);
+			
+			dataSetProvider=dataSetForIndicators.concat(dataSetProvider);
+			
+			
+			for (var i=0;i<dataSetProvider;i++) {
+			    var sum = 0;
+			    for(var j=i-(period-1);j<=i;j++){
+						sum+= dataSetProvider[j][field];
+					}
+					dataSetProvider[i][avgField]=(sum/period);
+			}
 			
 			dataSet.dataProvider = dataSetProvider.slice(dataSetForIndicators.length);
 			

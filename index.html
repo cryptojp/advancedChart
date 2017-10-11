@@ -20,6 +20,7 @@
     <script src="https://www.amcharts.com/lib/3/amstock.js"></script>
     <script src="app.js"></script>
     <script src="chartUtil.js"></script>
+    <script src="chartIndicators.js"></script>
 
     <style>
         body {
@@ -27,8 +28,8 @@
         }
 
         #chartdiv {
-            width: 100%;
-            height: 750px;
+            width: 50%;
+            height: 250px;
         }
 
         .jumbotron {
@@ -74,10 +75,22 @@
                 </div>
                 <div class="col-xs-3">
                     <h5>Social Indicators</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-success dropdown-toggle" type="button" data-toggle="dropdown">Social Indicators
+                                      <span class="caret"></span></button>
+                        <ul class="dropdown-menu">
+                            <li ng-repeat="(index, chart) in bottomChart"><a ng-click="handleBottomChart(index)">{{chart.name}}</a></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
-        <div id="chartdiv"></div>
+        <div class="row">
+            <div class="col-xs-offset-3">
+                <div id="chartdiv"></div>
+            </div>
+        </div>
+        
     </div>
 </body>
 
