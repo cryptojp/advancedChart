@@ -1,5 +1,9 @@
 $(document).ready(function() {
     var currentDataSet = [];
+    var dataForIndicators = [];
+    var selectedIndicators = [0, 0, 0];
+    var currentBottomChart = [];
+    var currentPeriod = [];
     var chartIndicators = {
         'None': { name: 'No Indicator', fullName: 'Remove the current indicator', type: 'Clear', period: 0, dropdownId: -1 },
         'SMA5': { name: 'SMA 5', fullName: 'Simple Moving Average 5', type: 'SMA', period: 5, dropdownId: -1 },
@@ -59,19 +63,12 @@ $(document).ready(function() {
         { key: 'CROPul', name: 'Code Repo Open Pulls', fullName: 'Code repository open pull issues', type: 'code_repo_open_pull_issues', available: "CodeRepository", isHidden: false, requiresLogin: true, selected: false },
         { key: 'CRCPul', name: 'Code Repo Closed Pulls', fullName: 'Code repository closed pull issues', type: 'code_repo_closed_pull_issues', available: "CodeRepository", isHidden: false, requiresLogin: true, selected: false }
     ];
-    var selectedIndicators = [0, 0, 0];
-    var currentBottomChart = [];
-    var currentPeriod = [];
     var chartUtil = {
         bottomVolumeTo: function(dataSet, panel, to) {
             dataSet.fieldMappings.push({ fromField: "volumeto", toField: "volumeto" });
             panel.title = "Volume " + to;
             panel.stockGraphs[0].valueField = "volumeto";
-        },
-        bottomVolumeFrom: function(dataSet, panel, from) {
-            dataSet.fieldMappings.push({ fromField: "volumefrom", toField: "volumefrom" });
-            panel.title = "Volume " + from;
-            panel.stockGraphs[0].valueField = "volumefrom";
+            panel.stockGraphs[0].balloonText = "<div style='margin:0px; font-size:8px;'>Vol:<strong>[[value]]</strong></div>";
         }
     };
     var addIndicators = {
@@ -125,25 +122,21 @@ $(document).ready(function() {
                     graph.lineColor = "orange";
                     break;
             }
+            // You have dataForIndicators which is currentData plus 50 points, dataSetForIndicators is the current data (dataSets: {dataProvider: chartData})
             dataSet.fieldMappings.push({ fromField: avgField, toField: avgField });
+            var avgIndicator = dataForIndicators.slice(50 - period+1);
+            console.log(avgIndicator);
             var dataSetProvider = dataSet.dataProvider;
-            dataSetProvider = dataSetForIndicators.concat(dataSetProvider);
             for (var i = 0; i < dataSetProvider.length; i++) {
                 var sum = 0;
-                if (i >= period) {
-                    for (var j = i - (period - 1); j <= i; j++) {
-                        sum += dataSetProvider[j][field];
-                    }
-                    dataSetProvider[i][avgField] = sum / period;
+                for (var j = i; j < i + period; j++) {
+                    sum += avgIndicator[j][field];
                 }
-                else {
-                    for (var j = 0; j <= i; j++) {
-                        sum += dataSetProvider[j][field];
-                    }
-                    dataSetProvider[i][avgField] = sum / (i + 1);
-                }
+                dataSetProvider[i][avgField] = sum / (period);
+
             }
-            dataSet.dataProvider = dataSetProvider.slice(dataSetForIndicators.length);
+            dataSet.dataProvider = dataSetProvider;
+            console.log(dataSet.dataProvider);
             panel.stockGraphs.push(graph);
         },
         ExponentialMovingAverage: function(dataSet, panel, field, period, dataSetForIndicators) {
@@ -279,123 +272,18 @@ $(document).ready(function() {
             dataSet.dataProvider = dataSetProvider.slice(dataSetForIndicators.length);
             panel.stockGraphs.push(graphUp);
             panel.stockGraphs.push(graphDown);
-        },
-        RSI: function(dataSet, panel, dataSetForIndicators, settings) {
-            var lineColor = "lineColor";
-            dataSet.fieldMappings.push({ fromField: settings.type, toField: settings.type });
-            panel.title = settings.fullName;
-            panel.stockGraphs = [{
-                id: settings.type,
-                valueField: settings.type,
-                lineColorField: lineColor,
-                lineThickness: 1,
-                balloonText: settings.type + ":<b>[[" + settings.type + "]]</b>",
-                bullet: "none",
-                useDataSetColors: false
-            }];
-            dataSet.stockEvents = [];
-            var dataSetProvider = dataSet.dataProvider;
-            dataSetProvider = dataSetForIndicators.concat(dataSetProvider);
-            for (var i = 0; i < dataSetProvider.length; i++) {
-                var gainSum = 0;
-                var lossSum = 0;
-                if (i >= settings.period) {
-                    for (var j = i - (settings.period - 1); j <= i; j++) {
-                        var diffOpenClose = dataSetProvider[j]['close'] - dataSetProvider[j]['open'];
-                        if (diffOpenClose > 0) {
-                            gainSum += diffOpenClose;
-                        }
-                        if (diffOpenClose < 0) {
-                            lossSum += Math.abs(diffOpenClose);
-                        }
-                    }
-                }
-                else {
-                    for (var j = 0; j <= i; j++) {
-                        var diffOpenClose = dataSetProvider[j]['close'] - dataSetProvider[j]['open'];
-                        if (diffOpenClose > 0) {
-                            gainSum += diffOpenClose;
-                        }
-                        if (diffOpenClose < 0) {
-                            lossSum += Math.abs(diffOpenClose);
-                        }
-                    }
-                }
-                dataSetProvider[i][settings.type] = (100 - 100 / (1 + (gainSum / settings.period) / (lossSum / settings.period)));
-            }
-
-            panel.stockLegend.valueTextRegular = "[[" + settings.type + "]] " + settings.type;
-            dataSet.dataProvider = dataSetProvider.slice(dataSetForIndicators.length);
-            dataSetProvider = dataSet.dataProvider;
-            /*add the buy and sell events*/
-            var currentIndex = 0;
-            var maxLength = dataSetProvider.length;
-            while (currentIndex < maxLength - 1) {
-                if (dataSetProvider[currentIndex][settings.type] > 70) {
-                    var max = dataSetProvider[currentIndex][settings.type];
-                    var dateForMax = dataSetProvider[currentIndex]['time'];
-                    while (dataSetProvider[currentIndex][settings.type] > 70 && currentIndex < maxLength - 1) {
-                        if (dataSetProvider[currentIndex][settings.type] > max) {
-                            max = dataSetProvider[currentIndex][settings.type];
-                            dateForMax = dataSetProvider[currentIndex]['time'];
-                        }
-                        dataSetProvider[currentIndex][lineColor] = "red";
-                        currentIndex++;
-                    }
-                    dataSet.stockEvents.push({
-                        date: new Date(dateForMax),
-                        type: "arrowDown",
-                        backgroundColor: "red",
-                        borderColor: "red",
-                        color: "red",
-                        rollOverColor: "pink",
-                        graph: settings.type,
-                        description: "Sell signal!"
-                    });
-                }
-                else if (dataSetProvider[currentIndex][settings.type] < 30) {
-                    var min = dataSetProvider[currentIndex][settings.type];
-                    var dateForMin = dataSetProvider[currentIndex]['time'];
-                    while (dataSetProvider[currentIndex][settings.type] < 30 && currentIndex < maxLength - 1) {
-                        if (dataSetProvider[currentIndex][settings.type] < min) {
-                            min = dataSetProvider[currentIndex][settings.type];
-                            dateForMin = dataSetProvider[currentIndex]['time'];
-                        }
-                        dataSetProvider[currentIndex][lineColor] = "green";
-                        currentIndex++;
-                    }
-                    dataSet.stockEvents.push({
-                        date: new Date(dateForMin),
-                        type: "arrowUp",
-                        backgroundColor: "green",
-                        borderColor: "green",
-                        color: "green",
-                        rollOverColor: "cyan",
-                        graph: settings.type,
-                        description: "Buy signal!"
-                    });
-                }
-                else {
-                    dataSetProvider[currentIndex][lineColor] = "black";
-                    currentIndex++;
-                }
-            }
-            //add the two RSI limits to mapping and push the charts
-            panel.valueAxes = [];
-            panel.valueAxes.push({
-                guides: [{ value: 70, toValue: 70, dashLength: 5, label: "Overbought", position: "right", fontSize: 9, lineAlpha: 1, lineThickness: 1, color: colorOptions.Red.Hex, lineColor: colorOptions.Red.Hex },
-                    { value: 30, toValue: 30, dashLength: 5, label: "Oversold", position: "right", fontSize: 9, lineAlpha: 1, lineThickness: 1, color: colorOptions.Green.Hex, lineColor: colorOptions.Green.Hex }
-                ]
-            });
         }
     };
     var generateNewChart = function() {
         var chartData = currentDataSet;
         var chartConfig = {
-            allLabels: "white",
             type: "stock",
             theme: "none",
             color: "white",
+            categoryAxesSettings: {
+                minPeriod: currentPeriod.period,
+                maxSeries: currentDataSet.length
+            },
             dataSets: [{
                 dataProvider: chartData,
                 title: "",
@@ -442,10 +330,11 @@ $(document).ready(function() {
                         comparable: true,
                         compareField: "close",
                         showBalloon: true,
+                        balloonText: "<div style='margin:0px; font-size:8px;'>Close:<strong>[[value]]</strong></div>",
                         proCandlesticks: true
                     }],
                     valueAxes: [{
-                        id:"a1",
+                        id: "a1",
                         axisColor: "white",
                         autoGridCount: false,
                         gridCount: currentPeriod.valueGridCount,
@@ -467,7 +356,7 @@ $(document).ready(function() {
                         openField: "close",
                         type: "column",
                         valueField: "volumeto",
-                        showBalloon: false,
+                        showBalloon: true,
                         fillAlphas: 1,
                         fillColors: "#3a89ff",
                         lineColor: "#c4dbff",
@@ -520,6 +409,12 @@ $(document).ready(function() {
                 autoMargins: false,
                 marginTop: 0
             },
+            chartCursor: {
+                valueBalloonsEnabled: true,
+                categoryBalloonEnabled: true,
+                cursorPosition: "mouse",
+                categoryBalloonDateFormat: currentPeriod.balloonDateFormat
+            },
             chartCursorSettings: {
                 pan: true,
                 valueLineEnabled: true,
@@ -539,23 +434,12 @@ $(document).ready(function() {
             chartScrollbarSettings: {
                 enabled: false
             },
-            legendSettings: {
-                //"color": "#fff"
-            },
-
-            stockEventsSettings: {
-                showAt: "high",
-                type: "pin"
-            },
-
             balloon: {
                 textAlign: "left",
                 offsetY: 10
             }
         };
-
         addIndicators.addOverlayChart(chartConfig.dataSets[0], chartConfig.panels[0], currentSocialIndicator);
-
         for (var index in selectedIndicators) {
             switch (selectedIndicators[index]['type']) {
                 case "SMA":
@@ -569,45 +453,47 @@ $(document).ready(function() {
                     break;
             }
         }
-
-
         switch (currentBottomChart) {
             case "volumeto":
                 chartUtil.bottomVolumeTo(chartConfig.dataSets[0], chartConfig.panels[1], "USD");
                 break;
             case "volumefrom":
-                chartUtil.bottomVolumeFrom(chartConfig.dataSets[0], chartConfig.panels[1], "BTC");
+                console.log('VolumeFrom'); //chartUtil.bottomVolumeFrom(chartConfig.dataSets[0], chartConfig.panels[1], "BTC");
                 break;
             case "RSI":
-                addIndicators.RSI(chartConfig.dataSets[0], chartConfig.panels[1], chartData, currentBottomChart);
+                console.log('RSI'); //addIndicators.RSI(chartConfig.dataSets[0], chartConfig.panels[1], chartData, currentBottomChart);
                 break;
             case "VOLATILITY":
-                //chartIndicators.bottomVolatility($scope.chartConfig.dataSets[0], $scope.chartConfig.panels[1], $scope.dataSetForIndicators, $scope.currentPeriod, $scope.bottomChart[i]);
+                console.log('Vol'); //chartIndicators.bottomVolatility($scope.chartConfig.dataSets[0], $scope.chartConfig.panels[1], $scope.dataSetForIndicators, $scope.currentPeriod, $scope.bottomChart[i]);
                 break;
             case "ADL":
                 console.log('ADL'); //chartIndicators.bottomADL($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
                 break;
             case "MACD":
-                console.log('ADL'); //chartIndicators.bottomMACD($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
+                console.log('MACD'); //chartIndicators.bottomMACD($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
                 break;
             case "StochasticO":
-                console.log('ADL'); //chartIndicators.bottomStochasticO($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
+                console.log('STO'); //chartIndicators.bottomStochasticO($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
                 break;
             case "Aroon":
-                chartIndicators.bottomAroon($scope.chartConfig.dataSets[0], $scope.chartConfig.panels[1], $scope.dataSetForIndicators, $scope.currentBottomChart);
+                console.log('ARO'); //chartIndicators.bottomAroon($scope.chartConfig.dataSets[0], $scope.chartConfig.panels[1], $scope.dataSetForIndicators, $scope.currentBottomChart);
                 break;
             case "OBV":
-                console.log('ADL'); //chartIndicators.bottomOBV($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
+                console.log('OBV'); //chartIndicators.bottomOBV($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
                 break;
         }
+
+        if (currentSocialIndicator.key == 'ND' && currentSocialIndicator.length > 0) {
+
+        }
+
         var chart = AmCharts.makeChart("chartdiv", chartConfig);
     };
     var getApiData = function(type, limit, aggr) {
-        var data = [];
-        var url = "https://min-api.cryptocompare.com/data/histo" + type + "?fsym=BTC&tsym=USD&limit=" + limit + "&aggregate=" + aggr;
+        var url = "https://min-api.cryptocompare.com/data/histo" + type + "?fsym=BTC&tsym=USD&limit=" + (limit + 50) + "&aggregate=" + aggr;
         $.getJSON(url, function(response) {
-            var data = response.Data;
-            currentDataSet = data;
+            dataForIndicators = response.Data;
+            currentDataSet = dataForIndicators.slice(50);
             for (var index in currentDataSet) {
                 currentDataSet[index]['time'] = new Date(currentDataSet[index]['time'] * 1000);
             }
@@ -652,19 +538,19 @@ $(document).ready(function() {
             }
             for (var i = currentDataIndex; i < totalDataPoints; i++) {
                 var socialIndex = i - currentDataIndex;
-                if (currentSocialData[socialIndex].points > 0) {
-                    for (var attrname in currentSocialData[socialIndex]) {
-                        currentDataSet[i][attrname] = currentSocialData[socialIndex][attrname];
-                    }
+                for (var attrname in currentSocialData[socialIndex]) {
+                    currentDataSet[i][attrname] = currentSocialData[socialIndex][attrname];
                 }
+
             }
-        } else {
+        }
+        else {
             var firstDataPointTs = currentDataSet[0].time;
             var currentSocialTs = currentSocialData[0].time;
             var indexToStart = 0;
-            while (firstDataPointTs>currentSocialTs) {
+            while (firstDataPointTs > currentSocialTs) {
                 indexToStart++;
-                currentSocialTs=currentSocialData[indexToStart].time;
+                currentSocialTs = currentSocialData[indexToStart].time;
             }
             for (var i = 0; i < totalDataPoints; i++) {
                 if (currentSocialData[indexToStart].points > 0) {
