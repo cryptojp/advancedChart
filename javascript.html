@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!---Bootstrap and styling--->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- jQuery library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+    <!-- Latest compiled JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <!---Scripts--->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://www.amcharts.com/lib/3/amcharts.js"></script>
+    <script src="https://www.amcharts.com/lib/3/serial.js"></script>
+    <script src="https://www.amcharts.com/lib/3/amstock.js"></script>
+    <script src="javascript.js"></script>
+    <script src="chartTools.js"></script>
+
+    <style>
+        body {
+            background-color: rgb(10,10,10);
+        }
+
+        #chartdiv {
+            width: 450px;
+            height: 250px;
+        }
+
+        .period-buttons {
+            border: 1px solid grey;
+            margin: 0 0 0 50px;
+        }
+
+        #first {
+            padding-left: 30px;
+        }
+        
+        #title {
+            margin:20px 0 20px 100px;
+        }
+        
+        .button-panel {
+            margin: 2% 0 0px 2%;
+        }
+        
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12 button-panel">
+                <div class="col-xs-1">
+                    <div class="dropdown">
+                        <button class="btn btn-xs btn-primary dropdown-toggle" type="button" data-toggle="dropdown">I 1
+                                      <span class="caret"></span></button>
+                        <ul class="dropdown-menu">
+                            <li><a class="chartIndicator" data-col='0' id="None">No Indicator</a></li>
+                            <li><a class="chartIndicator" data-col='0' id="SMA5">SMA 5</a></li>
+                            <li><a class="chartIndicator" data-col='0' id="SMA13">SMA 13</a></li>
+                            <li><a class="chartIndicator" data-col='0' id="SMA20">SMA 20</a></li>
+                            <li><a class="chartIndicator" data-col='0' id="SMA30">SMA 30</a></li>
+                            <li><a class="chartIndicator" data-col='0' id="SMA50">SMA 50</a></li>
+                            <li><a class="chartIndicator" data-col='0' id="EMA5">EMA 5</a></li>
+                            <li><a class="chartIndicator" data-col='0' id="EMA12">EMA 12</a></li>
+                            <li><a class="chartIndicator" data-col='0' id="EMA26">EMA 26</a></li>
+                            <li><a class="chartIndicator" data-col='0' id="EMA50">EMA 50</a></li>
+                            <li><a class="chartIndicator" data-col='0' id="BB5">BB5</a></li>
+                            <li><a class="chartIndicator" data-col='0' id="BB13">BB13</a></li>
+                            <li><a class="chartIndicator" data-col='0' id="BB20">BB20</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-xs-1">
+                    <div class="dropdown">
+                        <button class="btn btn-xs btn-primary dropdown-toggle" type="button" data-toggle="dropdown">I 2
+                                      <span class="caret"></span></button>
+                        <ul class="dropdown-menu">
+                            <li><a class="chartIndicator" data-col='1' id="None">No Indicator</a></li>
+                            <li><a class="chartIndicator" data-col='1' id="SMA5">SMA 5</a></li>
+                            <li><a class="chartIndicator" data-col='1' id="SMA13">SMA 13</a></li>
+                            <li><a class="chartIndicator" data-col='1' id="SMA20">SMA 20</a></li>
+                            <li><a class="chartIndicator" data-col='1' id="SMA30">SMA 30</a></li>
+                            <li><a class="chartIndicator" data-col='1' id="SMA50">SMA 50</a></li>
+                            <li><a class="chartIndicator" data-col='1' id="EMA5">EMA 5</a></li>
+                            <li><a class="chartIndicator" data-col='1' id="EMA12">EMA 12</a></li>
+                            <li><a class="chartIndicator" data-col='1' id="EMA26">EMA 26</a></li>
+                            <li><a class="chartIndicator" data-col='1' id="EMA50">EMA 50</a></li>
+                            <li><a class="chartIndicator" data-col='1' id="BB5">BB5</a></li>
+                            <li><a class="chartIndicator" data-col='1' id="BB13">BB13</a></li>
+                            <li><a class="chartIndicator" data-col='1' id="BB20">BB20</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-xs-1">
+                    <div class="dropdown">
+                        <button class="btn btn-xs btn-primary dropdown-toggle" type="button" data-toggle="dropdown">I 3
+                                      <span class="caret"></span></button>
+                        <ul class="dropdown-menu">
+                            <li><a class="chartIndicator" data-col='2' id="None">No Indicator</a></li>
+                            <li><a class="chartIndicator" data-col='2' id="SMA5">SMA 5</a></li>
+                            <li><a class="chartIndicator" data-col='2' id="SMA13">SMA 13</a></li>
+                            <li><a class="chartIndicator" data-col='2' id="SMA30">SMA 30</a></li>
+                            <li><a class="chartIndicator" data-col='2' id="EMA5">EMA 5</a></li>
+                            <li><a class="chartIndicator" data-col='2' id="EMA12">EMA 12</a></li>
+                            <li><a class="chartIndicator" data-col='2' id="EMA26">EMA 26</a></li>
+                            <li><a class="chartIndicator" data-col='2' id="EMA50">EMA 50</a></li>
+                            <li><a class="chartIndicator" data-col='2' id="BB5">BB5</a></li>
+                            <li><a class="chartIndicator" data-col='2' id="BB13">BB13</a></li>
+                            <li><a class="chartIndicator" data-col='2' id="BB20">BB20</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-xs-1">
+                    <div class="dropdown">
+                        <button id="bottomChartDrop" class="btn btn-xs btn-danger dropdown-toggle" type="button" data-toggle="dropdown">Bottom
+                                      <span class="caret"></span></button>
+                        <ul class="dropdown-menu">
+                            <li><a class="bottomChart" id="volumeto">Volume To</a></li>
+                            <li><a class="bottomChart" id="volumefrom">Volume From</a></li>
+                            <li><a class="bottomChart" id="RSI14">RSI 14</a></li>
+                            <li><a class="bottomChart" id="RSI21">RSI 21</a></li>
+                            <li><a class="bottomChart" id="Volatility">Volality</a></li>
+                            <li><a class="bottomChart" id="ADL">ADL</a></li>
+                            <li><a class="bottomChart" id="MACD">MACD</a></li>
+                            <li><a class="bottomChart" id="StochFast">StochasticO Fast</a></li>
+                            <li><a class="bottomChart" id="StochSlow">StochasticO Slow</a></li>
+                            <li><a class="bottomChart" id="StochFull10">StochasticO Full 10</a></li>
+                            <li><a class="bottomChart" id="StochFull20">StochasticO Full 20</a></li>
+                            <li><a class="bottomChart" id="Aroon10">Aroon 10</a></li>
+                            <li><a class="bottomChart" id="Aroon20">Aroon 20</a></li>
+                            <li><a class="bottomChart" id="OBV">On Balance Volume 20</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-xs-1">
+                    <div class="dropdown">
+                        <button id="socialDropdown" class="btn btn-xs btn-success dropdown-toggle" type="button" data-toggle="dropdown">Social
+                                      <span class="caret"></span></button>
+                        <ul class="dropdown-menu">
+                            <li><a class="socialIndicator" data-id=0 >No Indicator</a></li>
+                            <li><a class="socialIndicator" data-id=1 >CryptoComp. Followers</a></li>
+                            <li><a class="socialIndicator" data-id=2 >CryptoComp. Views</a></li>
+                            <li><a class="socialIndicator" data-id=3 >FB Likes</a></li>
+                            <li><a class="socialIndicator" data-id=4 >FB Talking About</a></li>
+                            <li><a class="socialIndicator" data-id=5 >Twitter Followers</a></li>
+                            <li><a class="socialIndicator" data-id=6 >Twitter Statuses</a></li>
+                            <li><a class="socialIndicator" data-id=7 >Reddit Subscribers</a></li>
+                            <li><a class="socialIndicator" data-id=8 >Reddit Active Users</a></li>
+                            <li><a class="socialIndicator" data-id=9 >Reddit Posts/Hour</a></li>
+                            <li><a class="socialIndicator" data-id=10 >Reddit Posts/Day</a></li>
+                            <li><a class="socialIndicator" data-id=11 >Reddit Comments/Hour</a></li>
+                            <li><a class="socialIndicator" data-id=12 >Reddit Comments/Day</a></li>
+                            <li><a class="socialIndicator" data-id=13 >Code Repo Stars</a></li>
+                            <li><a class="socialIndicator" data-id=14 >Code Repo Forks</a></li>
+                            <li><a class="socialIndicator" data-id=15 >Code Repo Open Pulls</a></li>
+                            <li><a class="socialIndicator" data-id=16 >Code Repo Closed Pulls</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12">
+                <div id="chartdiv"></div>
+                <div class="row">
+                    <div class="col-xs-5">
+                        <div class="period-buttons">
+                            <a data-id=0 class="btn time-button" id="first"><strong>1 H</strong></a>
+                            <a data-id=1 class="btn time-button"><strong>1 D</strong></a>
+                            <a data-id=2 class="btn time-button"><strong>1 W</strong></a>
+                            <a data-id=3 class="btn time-button"><strong>1 M</strong></a>
+                            <a data-id=4 class="btn time-button"><strong>3 M</strong></a>
+                            <a data-id=5 class="btn time-button"><strong>6 M</strong></a>
+                            <a data-id=6 class="btn time-button"><strong>1 Y</strong></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

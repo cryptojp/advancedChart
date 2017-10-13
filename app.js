@@ -151,7 +151,7 @@ angular.module("myApp", [])
           {
             title: "Volume",
             percentHeight: 30,
-            marginTop: 1,
+            marginTop:0,
             columnWidth: 0.6,
             showCategoryAxis: false,
             stockGraphs: [{
@@ -185,6 +185,8 @@ angular.module("myApp", [])
           marginTop: 5,
           marginBottom: 5
         },
+        
+        
 
         chartScrollbarSettings: {
           graph: "g1",
@@ -259,20 +261,18 @@ angular.module("myApp", [])
           }]
         }
       };
-      console.log($scope.selectedIndicators);
       
       for (var index in $scope.selectedIndicators) {
         switch($scope.selectedIndicators[index]['type']) {
 					case "SMA":
 						chartUtil.addSimpleMovingAverage($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[0],'close',$scope.selectedIndicators[index].period,data);
-						console.log('here');
 					break;
-					/*case "EMA":
+					case "EMA":
 						chartIndicators.addExponentialMovingAverage($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[0],'close',$scope.chartIndicators[i].period,$scope.dataSetForIndicators);
 					break;
 				 	case "BBands":
 						chartIndicators.addBollingerBands($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[0],'close',$scope.chartIndicators[i].period,$scope.dataSetForIndicators);
-					break;*/
+					break;
 				}
       }
       
