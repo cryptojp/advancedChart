@@ -19,6 +19,15 @@ $(document).ready(function() {
         'BB13': { key: 'BB13', name: 'BB 13', fullName: 'Bollinger Bands 13', type: 'BB', period: 13, dropdownId: -1 },
         'BB20': { key: 'BB20', name: 'BB 20', fullName: 'Bollinger Bands 20', type: 'BB', period: 20, dropdownId: -1 }
     };
+    var highestChartIndicatorPeriod = function() {
+        var highestNumber = 0
+        for (var key in chartIndicators) {
+            if (chartIndicators[key]['period'] > highestNumber)
+                highestNumber = chartIndicators[key]['period'];
+        }
+        return highestNumber
+    }
+    var maxIndicator = highestChartIndicatorPeriod();
     var bottomChart = [
         { key: 'VF', name: 'Volume From', fullName: 'Total Volume From', type: 'Volume', period: 1, requiresLogin: false, selected: false },
         { key: 'VT', name: 'Volume To', fullName: 'Total Volume To', type: 'VolumeTo', period: 1, requiresLogin: false, selected: false },
@@ -38,8 +47,8 @@ $(document).ready(function() {
     var chartPeriod = [
         { name: '1 Hour', shortName: '1 H', maxPoints: 60, type: 'minute', aggregation: 1, periodForTable: 10, periodForTableName: '10 min', period: 'mm', valueGridCount: 7, catGridCount: 10, balloonDateFormat: "JJ:NN" },
         { name: '1 Day', shortName: '1 D', maxPoints: 144, type: 'minute', aggregation: 10, periodForTable: 18, periodForTableName: '3 hours', period: '10mm', valueGridCount: 8, catGridCount: 8, balloonDateFormat: "JJ:NN" },
-        { name: '1 Week', shortName: '1 W', maxPoints: 168, type: 'hour', aggregation: 1, periodForTable: 24, periodForTableName: 'day', period: 'hh', valueGridCount: 5, catGridCount: 10, balloonDateFormat: "MMM DD, JJ:NN" },
-        { name: '1 Month', shortName: '1 M', maxPoints: 120, type: 'hour', aggregation: 6, periodForTable: 12, periodForTableName: '3 days', period: '6hh', valueGridCount: 6, catGridCount: 10, balloonDateFormat: "MMM DD" },
+        { name: '1 Week', shortName: '1 W', maxPoints: 168, type: 'hour', aggregation: 1, periodForTable: 24, periodForTableName: 'day', period: 'hh', valueGridCount: 10, catGridCount: 10, balloonDateFormat: "MMM DD, JJ:NN" },
+        { name: '1 Month', shortName: '1 M', maxPoints: 120, type: 'hour', aggregation: 6, periodForTable: 12, periodForTableName: '3 days', period: '6hh', valueGridCount: 6, catGridCount: 5, balloonDateFormat: "MMM DD" },
         { name: '3 Months', shortName: '3 M', maxPoints: 90, type: 'day', aggregation: 1, periodForTable: 10, periodForTableName: '10 days', period: 'DD', valueGridCount: 5, catGridCount: 5, balloonDateFormat: "MMM DD" },
         { name: '6 Months', shortName: '6 M', maxPoints: 180, type: 'day', aggregation: 1, periodForTable: 30, periodForTableName: '30 days', period: 'DD', valueGridCount: 6, catGridCount: 10, balloonDateFormat: "MMM DD" },
         { name: '1 Year', shortName: '1 Y', maxPoints: 365, type: 'day', aggregation: 1, periodForTable: 60, periodForTableName: '60 days', period: 'DD', valueGridCount: 5, catGridCount: 10, balloonDateFormat: "MMM DD" }
@@ -88,7 +97,7 @@ $(document).ready(function() {
                 valueAxis: "a2",
                 lineColor: "green",
                 lineThickness: 1,
-                balloonText: settings.name + ":<b>[[" + settings.type + "]]</b>",
+                balloonText: settings.name + ":<b>[[value]]</b>",
                 bullet: "none",
                 title: settings.name,
                 useDataSetColors: false,
@@ -122,10 +131,8 @@ $(document).ready(function() {
                     graph.lineColor = "orange";
                     break;
             }
-            // You have dataForIndicators which is currentData plus 50 points, dataSetForIndicators is the current data (dataSets: {dataProvider: chartData})
             dataSet.fieldMappings.push({ fromField: avgField, toField: avgField });
-            var avgIndicator = dataForIndicators.slice(50 - period+1);
-            console.log(avgIndicator);
+            var avgIndicator = dataForIndicators.slice(maxIndicator - period + 1);
             var dataSetProvider = dataSet.dataProvider;
             for (var i = 0; i < dataSetProvider.length; i++) {
                 var sum = 0;
@@ -133,10 +140,8 @@ $(document).ready(function() {
                     sum += avgIndicator[j][field];
                 }
                 dataSetProvider[i][avgField] = sum / (period);
-
             }
             dataSet.dataProvider = dataSetProvider;
-            console.log(dataSet.dataProvider);
             panel.stockGraphs.push(graph);
         },
         ExponentialMovingAverage: function(dataSet, panel, field, period, dataSetForIndicators) {
@@ -162,37 +167,20 @@ $(document).ready(function() {
                     break;
             }
             dataSet.fieldMappings.push({ fromField: avgField, toField: avgField });
+            var avgIndicator = dataForIndicators.slice(maxIndicator - period + 1);
             var dataSetProvider = dataSet.dataProvider;
-            dataSetProvider = dataSetForIndicators.concat(dataSetProvider);
             var sum = 0;
-            var totalPoints = 0;
             var emaMultiplier = 2 / (period + 1);
             var firstEMA = 0;
-            if (period > dataSetForIndicators.length) {
-                if (dataSetForIndicators.length == 0) {
-                    sum = dataSetProvider[0][field];
-                    totalPoints = 1;
-                }
-                else {
-                    for (var i = 0; i < dataSetForIndicators.length; i++) {
-                        sum += dataSetProvider[i][field];
-                    }
-                    totalPoints = dataSetForIndicators.length;
-                }
+            for (var j = 0; j < period; j++) {
+                sum += avgIndicator[j][field];
             }
-            else {
-                for (var i = dataSetForIndicators.length - period; i < dataSetForIndicators.length; i++) {
-                    sum += dataSetProvider[i][field];
-                }
-                totalPoints = period;
-            }
-
-            firstEMA = (sum / totalPoints);
+            firstEMA = sum / period;
             dataSetProvider[0][avgField] = firstEMA;
             for (var i = 1; i < dataSetProvider.length; i++) {
                 dataSetProvider[i][avgField] = (dataSetProvider[i][field] - dataSetProvider[i - 1][avgField]) * emaMultiplier + dataSetProvider[i - 1][avgField];
             }
-            dataSet.dataProvider = dataSetProvider.slice(dataSetForIndicators.length);
+            dataSet.dataProvider = dataSetProvider;
             panel.stockGraphs.push(graph);
         },
         BollingerBands: function(dataSet, panel, field, period, dataSetForIndicators) {
@@ -207,13 +195,13 @@ $(document).ready(function() {
             graphUp.valueField = avgFieldUp;
             graphUp.useDataSetColors = false;
             graphUp.balloonText = "BBand " + period + " Top:<b>[[value]]</b>";
-            graphUp.lineThickness = 2;
+            graphUp.lineThickness = 1;
             graphUp.visibleInLegend = false;
 
             graphDown.valueField = avgFieldDown;
             graphDown.useDataSetColors = false;
             graphDown.balloonText = "BBand " + period + " Bottom:<b>[[value]]</b>";
-            graphDown.lineThickness = 2;
+            graphDown.lineThickness = 1;
             graphDown.visibleInLegend = false;
             switch (period) {
                 case 5:
@@ -229,47 +217,31 @@ $(document).ready(function() {
                     graphDown.lineColor = "green";
                     break;
             };
+
             dataSet.fieldMappings.push({ fromField: avgFieldUp, toField: avgFieldUp });
             dataSet.fieldMappings.push({ fromField: avgFieldDown, toField: avgFieldDown });
+            var avgIndicator = dataForIndicators.slice(maxIndicator - period + 1);
             var dataSetProvider = dataSet.dataProvider;
-            dataSetProvider = dataSetForIndicators.concat(dataSetProvider);
             for (var i = 0; i < dataSetProvider.length; i++) {
                 var sum = 0;
+                for (var j = i; j < i + period; j++) {
+                    sum += avgIndicator[j][field];
+                }
+                dataSetProvider[i][sma] = sum / (period);
+
+                var sqrDifference = 0;
+                var diff = 0;
                 var sumSqrDiff = 0;
-                if (i >= period) {
-                    for (var j = i - (period - 1); j <= i; j++) {
-                        sum += dataSetProvider[j][field];
-                        if (j < i) {
-                            sumSqrDiff += dataSetProvider[j][squaredDifferance];
-                        }
-                    }
-                    var sqrDifference = dataSetProvider[i][field] - sum / period;
-                    sqrDifference = sqrDifference * sqrDifference;
+                for (var j = i; j < i + period; j++) {
+                    diff = avgIndicator[j][field] - dataSetProvider[i][sma];
+                    sqrDifference = diff * diff;
                     sumSqrDiff += sqrDifference;
-                    dataSetProvider[i][squaredDifferance] = sqrDifference;
-                    dataSetProvider[i][sma] = sum / period;
-                    var deviation = Math.sqrt(sumSqrDiff / period);
-                    dataSetProvider[i][avgFieldUp] = dataSetProvider[i][sma] + 2 * deviation;
-                    dataSetProvider[i][avgFieldDown] = dataSetProvider[i][sma] - 2 * deviation;
                 }
-                else {
-                    for (var j = 0; j <= i; j++) {
-                        sum += dataSetProvider[j][field];
-                        if (j < i) {
-                            sumSqrDiff += dataSetProvider[j][squaredDifferance];
-                        }
-                    }
-                    var sqrDifference = dataSetProvider[i][field] - sum / (i + 1);
-                    sqrDifference = sqrDifference * sqrDifference;
-                    sumSqrDiff += sqrDifference;
-                    dataSetProvider[i][squaredDifferance] = sqrDifference;
-                    dataSetProvider[i][sma] = sum / (i + 1);
-                    var deviation = Math.sqrt(sumSqrDiff / (i + 1));
-                    dataSetProvider[i][avgFieldUp] = dataSetProvider[i][sma] + 2 * deviation;
-                    dataSetProvider[i][avgFieldDown] = dataSetProvider[i][sma] - 2 * deviation;
-                }
+                var deviation = Math.sqrt(sumSqrDiff / (period));
+                dataSetProvider[i][avgFieldUp] = (dataSetProvider[i][sma] + 2 * deviation);
+                dataSetProvider[i][avgFieldDown] = (dataSetProvider[i][sma] - 2 * deviation);
             }
-            dataSet.dataProvider = dataSetProvider.slice(dataSetForIndicators.length);
+            dataSet.dataProvider = dataSetProvider;
             panel.stockGraphs.push(graphUp);
             panel.stockGraphs.push(graphDown);
         }
@@ -280,10 +252,6 @@ $(document).ready(function() {
             type: "stock",
             theme: "none",
             color: "white",
-            categoryAxesSettings: {
-                minPeriod: currentPeriod.period,
-                maxSeries: currentDataSet.length
-            },
             dataSets: [{
                 dataProvider: chartData,
                 title: "",
@@ -337,7 +305,7 @@ $(document).ready(function() {
                         id: "a1",
                         axisColor: "white",
                         autoGridCount: false,
-                        gridCount: currentPeriod.valueGridCount,
+                        gridCount: currentPeriod.valueGridCount
                     }],
                     stockLegend: {
                         valueTextRegular: undefined,
@@ -349,7 +317,7 @@ $(document).ready(function() {
                     percentHeight: 35,
                     fontSize: 8,
                     autoMargins: false,
-                    marginTop: 1,
+                    marginTop: 0,
                     columnWidth: 0.6,
                     showCategoryAxis: true,
                     stockGraphs: [{
@@ -385,10 +353,14 @@ $(document).ready(function() {
             categoryAxesSettings: {
                 equalSpacing: true,
                 gridColor: "#555",
-                gridAlpha: 1,
+                gridAlpha: 0.2,
                 axisColor: "white",
                 color: "white",
                 parseDates: true,
+                minPeriod: currentPeriod.period,
+                maxSeries: currentDataSet.length,
+                autoGridCount: false,
+                gridCount: currentPeriod.catGridCount,
                 dateFormats: [
                     { period: 'mm', format: 'JJ:NN' },
                     { period: '10 mm', format: 'JJ:NN DD' },
@@ -401,7 +373,7 @@ $(document).ready(function() {
             },
             valueAxesSettings: {
                 gridColor: "#555",
-                gridAlpha: 1,
+                gridAlpha: 0.2,
                 axisColor: "white",
                 color: "white",
                 inside: true,
@@ -439,7 +411,6 @@ $(document).ready(function() {
                 offsetY: 10
             }
         };
-        addIndicators.addOverlayChart(chartConfig.dataSets[0], chartConfig.panels[0], currentSocialIndicator);
         for (var index in selectedIndicators) {
             switch (selectedIndicators[index]['type']) {
                 case "SMA":
@@ -458,39 +429,37 @@ $(document).ready(function() {
                 chartUtil.bottomVolumeTo(chartConfig.dataSets[0], chartConfig.panels[1], "USD");
                 break;
             case "volumefrom":
-                console.log('VolumeFrom'); //chartUtil.bottomVolumeFrom(chartConfig.dataSets[0], chartConfig.panels[1], "BTC");
+                //chartUtil.bottomVolumeFrom(chartConfig.dataSets[0], chartConfig.panels[1], "BTC");
                 break;
             case "RSI":
-                console.log('RSI'); //addIndicators.RSI(chartConfig.dataSets[0], chartConfig.panels[1], chartData, currentBottomChart);
+                //addIndicators.RSI(chartConfig.dataSets[0], chartConfig.panels[1], chartData, currentBottomChart);
                 break;
             case "VOLATILITY":
-                console.log('Vol'); //chartIndicators.bottomVolatility($scope.chartConfig.dataSets[0], $scope.chartConfig.panels[1], $scope.dataSetForIndicators, $scope.currentPeriod, $scope.bottomChart[i]);
+                //chartIndicators.bottomVolatility($scope.chartConfig.dataSets[0], $scope.chartConfig.panels[1], $scope.dataSetForIndicators, $scope.currentPeriod, $scope.bottomChart[i]);
                 break;
             case "ADL":
-                console.log('ADL'); //chartIndicators.bottomADL($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
+                //chartIndicators.bottomADL($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
                 break;
             case "MACD":
-                console.log('MACD'); //chartIndicators.bottomMACD($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
+                //chartIndicators.bottomMACD($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
                 break;
             case "StochasticO":
-                console.log('STO'); //chartIndicators.bottomStochasticO($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
+                //chartIndicators.bottomStochasticO($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
                 break;
             case "Aroon":
-                console.log('ARO'); //chartIndicators.bottomAroon($scope.chartConfig.dataSets[0], $scope.chartConfig.panels[1], $scope.dataSetForIndicators, $scope.currentBottomChart);
+                //chartIndicators.bottomAroon($scope.chartConfig.dataSets[0], $scope.chartConfig.panels[1], $scope.dataSetForIndicators, $scope.currentBottomChart);
                 break;
             case "OBV":
-                console.log('OBV'); //chartIndicators.bottomOBV($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
+                //chartIndicators.bottomOBV($scope.chartConfig.dataSets[0],$scope.chartConfig.panels[1],$scope.dataSetForIndicators,$scope.bottomChart[i]);
                 break;
         }
-
-        if (currentSocialIndicator.key == 'ND' && currentSocialIndicator.length > 0) {
-
+        if (currentSocialIndicator.key !== 'ND' && currentSocialData.length > 0) {
+            addIndicators.addOverlayChart(chartConfig.dataSets[0], chartConfig.panels[0], currentSocialIndicator);
         }
-
         var chart = AmCharts.makeChart("chartdiv", chartConfig);
     };
     var getApiData = function(type, limit, aggr) {
-        var url = "https://min-api.cryptocompare.com/data/histo" + type + "?fsym=BTC&tsym=USD&limit=" + (limit + 50) + "&aggregate=" + aggr;
+        var url = "https://min-api.cryptocompare.com/data/histo" + type + "?fsym=BTC&tsym=USD&limit=" + (limit + maxIndicator) + "&aggregate=" + aggr;
         $.getJSON(url, function(response) {
             dataForIndicators = response.Data;
             currentDataSet = dataForIndicators.slice(50);
@@ -503,7 +472,7 @@ $(document).ready(function() {
     var currentSocialData = [];
     var currentSocialIndicator = [];
     var getSocialData = function(type, limit, position) {
-        var url = "https://www.cryptocompare.com/api/data/socialstatshisto" + type + "/?id=1182&limit=" + limit;
+        var url = "https://www.cryptocompare.com/api/data/socialstatshisto" + type + "/?id=1182&limit=" + limit + "&aggregate=" + position;
         $.getJSON(url, function(response) {
             var data = response.Data;
             for (var index in data) {
@@ -541,24 +510,21 @@ $(document).ready(function() {
                 for (var attrname in currentSocialData[socialIndex]) {
                     currentDataSet[i][attrname] = currentSocialData[socialIndex][attrname];
                 }
-
             }
         }
         else {
             var firstDataPointTs = currentDataSet[0].time;
             var currentSocialTs = currentSocialData[0].time;
             var indexToStart = 0;
-            while (firstDataPointTs > currentSocialTs) {
+            while (currentSocialTs > firstDataPointTs) {
                 indexToStart++;
                 currentSocialTs = currentSocialData[indexToStart].time;
             }
             for (var i = 0; i < totalDataPoints; i++) {
-                if (currentSocialData[indexToStart].points > 0) {
-                    for (var attrname in currentSocialData[indexToStart]) {
-                        currentDataSet[i][attrname] = currentSocialData[indexToStart][attrname];
-                    }
-                    indexToStart++;
+                for (var attrname in currentSocialData[indexToStart]) {
+                    currentDataSet[i][attrname] = currentSocialData[indexToStart][attrname];
                 }
+                indexToStart++;
             }
         }
     };
@@ -583,7 +549,6 @@ $(document).ready(function() {
         else {
             $('#socialDropdown').show();
         }
-        var id = $(this).attr('data-id');
         if (currentPeriod == chartPeriod[id]) {
             return;
         }
@@ -595,6 +560,6 @@ $(document).ready(function() {
     $('.socialIndicator').click(function() {
         var socialId = $(this).attr('data-id');
         currentSocialIndicator = socialIndicator[socialId];
-        getSocialData(currentPeriod.type, currentDataSet.length);
+        getSocialData(currentPeriod.type, currentDataSet.length, currentPeriod.aggregation);
     });
 });
